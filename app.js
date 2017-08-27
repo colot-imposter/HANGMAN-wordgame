@@ -1,35 +1,61 @@
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 const bodyParser = require('body-parser');
-const expressValidator = require('express-validator');
+// // const expressValidator = require('express-validator');
 const session = require('express-session');
-const wordList = require('./models/words');
 const app = express();
-// const words = fs.readFileSync("/usr/share/dict/words", "utf-8").toLowerCase().split("\n");
+const wordList = require('./models/words');
+
+let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
+let letterGuessed = [];
+let display = [];
+console.log("theis is the wr", word);
 
 
-// VARIABLES ^^
 
-// BOILER PLATE
-// mustache
 app.engine('mustache', mustacheExpress());
 app.set('views', './views');
 app.set('view engine', 'mustache');
-// body-parser
 app.use(bodyParser.urlencoded({
   extended: false
 }));
-// validator
-app.use(expressValidator());
-// session
+// app.use(expressValidator());
+
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true
 }))
-// BOILER PLATE
-//
 
+app.get('/', function(req, res) {
+  res.render('index', {
+    word: word
+  })
+})
+
+
+
+
+app.post('/guessing', function(req, res) {
+  let letter = req.body.letter;
+      for (var i = 0; i < word.length; i++) {
+        word[i]
+        if (word[i] === letter) {
+          display.push(word[i])
+        }
+      }
+      console.log("letter", letter);
+      letterGuessed.push(letter)
+
+
+
+  console.log(word);
+  res.render('index', {
+    word: word,
+    letterGuessed: letterGuessed,
+    display: display
+  })
+})
 
 app.listen(3000, function() {
   console.log('Successfully started express application!');
