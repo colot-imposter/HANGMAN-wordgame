@@ -1,21 +1,22 @@
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 const bodyParser = require('body-parser');
-// // const expressValidator = require('express-validator');
+const expressValidator = require('express-validator');
 const session = require('express-session');
 const app = express();
 const wordList = require('./models/words');
 
-let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
-console.log("theis is the wr", word);
-let wordLine = []
-let letterGuessed = [];
 
-let display = [];
-
-
-
-
+function newGame() {
+  let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
+  console.log("theis is the wr", word);
+  let wordLine = []
+  let letterGuessed = [];
+  let display = [];
+  word.forEach(function(e) {
+  wordLine.push('_ ')
+  })
+}
 
 app.engine('mustache', mustacheExpress());
 app.set('views', './views');
@@ -23,54 +24,91 @@ app.set('view engine', 'mustache');
 app.use(bodyParser.urlencoded({
   extended: false
 }));
-// app.use(expressValidator());
+app.use(expressValidator());
 
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
 }))
 
 app.get('/', function(req, res) {
-  word.forEach(function(e){
-    wordLine.push('_ ')
-  })
-  res.render('index', {wordLine:wordLine})
+  if (!req.session.index) {
+    req.session.index = index;
+    newGame();
+    res.render('index', {
+      wordLine: wordLine
+    });
+  }
+  else {
+    req.session.winner = 0;
+    res.render('index', {
+      wordLine: wordLine
+    })
+  }
+
 })
+
+
+
 
 
 app.post('/guessing', function(req, res) {
-console.log(word);
-if (guessedNum = 0){
-  res.render('/loss')}
-
-  let guessedNum = (word.length+2)-(letterGuessed.length)
+  console.log("this is a wordline", wordLine);
 
   let letter = req.body.letter;
-      for (var i = 0; i < word.length; i++) {
-        word[i]
-        if (word[i] === letter) {
-          wordLine[i] = word[i]
-        }
-      }
-      console.log("letter", letter);
-      letterGuessed.push(letter);
-      console.log('guesssssneed',guessedNum);
+  req.checkBody('letter', "You must type something").notEmpty();
+  req.checkBody('letter', "It must be a letter").isAlpha();
+  let errors = req.validationErrors();
+
+  let guessedNum = (word.length + 2) - (letterGuessed.length)
+  if (guessedNum < 1) {
+    res.render('/loss')
+  }
+
+
+  for (var i = 0; i < word.length; i++) {
+    if (errors) {
+      console.log(errors);
+      res.render('index', {
+        errors: errors
+      });
+    }
+    if (word[i] === letter) {
+      wordLine[i] = word[i]
+      req.session.winner++;
+    }
+  }
+  if (req.session.winner === word.length) {
+    res.redirect('/win')
+  } else {
+    res.render('index', {
+      wordLine: wordLine,
+      letterGuessed: letterGuessed,
+      display: display,
+      guessedNum: guessedNum
+    })
+  }
+  console.log("letter", letter);
+  letterGuessed.push(letter);
+  console.log('guesssssneed', guessedNum);
 
 
   console.log(word);
-  res.render('index', {
-    wordLine: wordLine,
-    letterGuessed: letterGuessed,
-    display: display,
-    guessedNum: guessedNum
-  })
+
 
 })
-
-app.post('/newgame', function(req, res){
-  res.render('index')
+app.post('/loss', function(req, res) {
+  res.send("you lose")
 })
+app.get('/win', function(req, res) {
+  res.render('win')
+})
+
+app.post('/newgame', function(req, res) {
+  res.redirect('/')
+})
+
 
 app.listen(3000, function() {
   console.log('Successfully started express application!');
