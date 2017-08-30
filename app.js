@@ -5,18 +5,10 @@ const expressValidator = require('express-validator');
 const session = require('express-session');
 const app = express();
 const wordList = require('./models/words');
-
-
-function newGame() {
-  let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
-  console.log("theis is the wr", word);
-  let wordLine = []
-  let letterGuessed = [];
-  let display = [];
-  word.forEach(function(e) {
-  wordLine.push('_ ')
-  })
-}
+let wordLine = []
+let index={}
+let letterGuessed = []
+let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
 
 app.engine('mustache', mustacheExpress());
 app.set('views', './views');
@@ -32,7 +24,18 @@ app.use(session({
   saveUninitialized: true,
 }))
 
+function newGame() {
+  console.log("theis is the wr", word);
+  let letterGuessed = []
+  let display = [];
+
+  word.forEach(function(e) {
+  wordLine.push('_ ')
+  })
+}
+
 app.get('/', function(req, res) {
+  req.session.winner = 0;
   if (!req.session.index) {
     req.session.index = index;
     newGame();
@@ -41,17 +44,11 @@ app.get('/', function(req, res) {
     });
   }
   else {
-    req.session.winner = 0;
     res.render('index', {
       wordLine: wordLine
     })
   }
-
 })
-
-
-
-
 
 app.post('/guessing', function(req, res) {
   console.log("this is a wordline", wordLine);
@@ -61,7 +58,7 @@ app.post('/guessing', function(req, res) {
   req.checkBody('letter', "It must be a letter").isAlpha();
   let errors = req.validationErrors();
 
-  let guessedNum = (word.length + 2) - (letterGuessed.length)
+  let guessedNum = (wordLine.length + 2) - (letterGuessed.length)
   if (guessedNum < 1) {
     res.render('/loss')
   }
@@ -85,7 +82,6 @@ app.post('/guessing', function(req, res) {
     res.render('index', {
       wordLine: wordLine,
       letterGuessed: letterGuessed,
-      display: display,
       guessedNum: guessedNum
     })
   }
