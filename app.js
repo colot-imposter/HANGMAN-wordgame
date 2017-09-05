@@ -1,14 +1,17 @@
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 const bodyParser = require('body-parser');
-const expressValidator = require('express-validator');
+// // const expressValidator = require('express-validator');
 const session = require('express-session');
 const app = express();
 const wordList = require('./models/words');
+
+
 let wordLine = []
-let index={}
-let letterGuessed = []
-let word = wordList[Math.floor(Math.random() * wordList.length)].split("")
+let letterGuessed = [];
+let display = [];
+let word= []
+
 
 app.engine('mustache', mustacheExpress());
 app.set('views', './views');
@@ -16,7 +19,7 @@ app.set('view engine', 'mustache');
 app.use(bodyParser.urlencoded({
   extended: false
 }));
-app.use(expressValidator());
+// app.use(expressValidator());
 
 app.use(session({
   secret: 'keyboard cat',
@@ -24,53 +27,50 @@ app.use(session({
   saveUninitialized: true,
 }))
 
-function newGame() {
-  console.log("theis is the wr", word);
-  let letterGuessed = []
-  let display = [];
-
+function newWordMachine() {
+  wordLine =[]
+  console.log('wordLine in new game', wordLine);
+  word = wordList[Math.floor(Math.random() * wordList.length)].split("")
+  console.log('word', word);
+  letterGuessed = [];
+  console.log('letterGuessed in new game', letterGuessed);
+  guessedNum=''
+  console.log('guessedNum in new game ', guessedNum);
   word.forEach(function(e) {
-  wordLine.push('_ ')
+    console.log("eeee in newgame", e);
+    wordLine.push('_ ')
   })
+  console.log('wordLine in new game, dashes ß', wordLine);
+
+  return
 }
 
 app.get('/', function(req, res) {
   req.session.winner = 0;
-  if (!req.session.index) {
-    req.session.index = index;
-    newGame();
-    res.render('index', {
-      wordLine: wordLine
-    });
-  }
-  else {
-    res.render('index', {
-      wordLine: wordLine
-    })
-  }
+  console.log("oooooooo", req.session.winner);
+  newWordMachine()
+  res.render('index', {
+    wordLine: wordLine
+  })
 })
 
+
 app.post('/guessing', function(req, res) {
-  console.log("this is a wordline", wordLine);
+  console.log("this is a wordLine", wordLine);
+
+  let guessedNum = (word.length + 3) - (letterGuessed.length)
+  console.log("guessedNum inside the loss ", guessedNum);
+  if (guessedNum === 0) {
+    console.log("inside if statement to the loss");
+    res.redirect('/loss')
+  }
 
   let letter = req.body.letter;
-  req.checkBody('letter', "You must type something").notEmpty();
-  req.checkBody('letter', "It must be a letter").isAlpha();
-  let errors = req.validationErrors();
 
-  let guessedNum = (wordLine.length + 2) - (letterGuessed.length)
-  if (guessedNum < 1) {
-    res.render('/loss')
-  }
 
 
   for (var i = 0; i < word.length; i++) {
-    if (errors) {
-      console.log(errors);
-      res.render('index', {
-        errors: errors
-      });
-    }
+    word[i]
     if (word[i] === letter) {
       wordLine[i] = word[i]
       req.session.winner++;
@@ -82,6 +82,7 @@ app.post('/guessing', function(req, res) {
     res.render('index', {
       wordLine: wordLine,
       letterGuessed: letterGuessed,
+      display: display,
       guessedNum: guessedNum
     })
   }
@@ -94,16 +95,23 @@ app.post('/guessing', function(req, res) {
 
 
 })
-app.post('/loss', function(req, res) {
-  res.send("you lose")
-})
+
 app.get('/win', function(req, res) {
   res.render('win')
 })
 
-app.post('/newgame', function(req, res) {
-  res.redirect('/')
+app.get('/loss', function(req, res) {
+  console.log('inside the get of the loss');
+  res.render('loss')
 })
+
+console.log("after wordLine", wordLine);
+app.post('/newgame', function(req, res) {
+  newWordMachine()
+  req.session.winner = 0;
+  res.render('index')
+  })
+
 
 
 app.listen(3000, function() {
